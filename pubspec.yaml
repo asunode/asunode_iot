@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: ^2.5.1
   http: ^1.2.0
   dartz: ^0.10.1
@@ -27,11 +29,3 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  fonts:
-    - family: Manrope
-      fonts:
-        - asset: assets/fonts/Manrope/Manrope-Regular.ttf
-        - asset: assets/fonts/Manrope/Manrope-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Manrope/Manrope-Bold.ttf
-          weight: 700
