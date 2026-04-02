@@ -1,6 +1,6 @@
 # asunode_iot
 
-A new Flutter project.
+ESP IoT Monitoring Dashboard with Neumorphic UI
 
 ## Getting Started
 
