@@ -26,8 +26,8 @@ class AppConstants {
 
   // Grid Layout
   static const int deviceGridColumns = 3;
-  static const double deviceCardAspectRatio = 1.5;
-  static const double gridSpacing = 24.0;
+  static const double deviceCardAspectRatio = 1.8;
+  static const double gridSpacing = 12.0;
 
   // Shadow Offsets (Neumorphic)
   static const double shadowOffsetConvex = 6.0;

@@ -13,8 +13,8 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
-  // TEST: İlk çalıştırmada örnek cihazları ekle
-  if (!prefs.containsKey('devices')) {
+  // TEST: Her başlatmada test cihazlarını yükle
+  {
     final testDevices = [
       {
         'id': '192.168.55.20',
@@ -30,6 +30,14 @@ void main() async {
         'name': 'ESP8266 Mutfak',
         'type': 'esp8266',
         'capabilities': ['relay_1', 'relay_2'],
+        'isActive': true,
+      },
+      {
+        'id': '192.168.55.21',
+        'ip': '192.168.55.21',
+        'name': 'ESP32 Bahce',
+        'type': 'esp32',
+        'capabilities': ['relay_1', 'motion', 'humidity'],
         'isActive': true,
       },
     ];

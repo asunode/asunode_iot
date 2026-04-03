@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
@@ -64,9 +66,21 @@ class _ShellPageState extends ConsumerState<ShellPage> {
                   style: Theme.of(context).textTheme.displayMedium,
                 ),
                 const Spacer(),
-                Text(
-                  'v${AppConstants.appVersion}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                // Home - Monitoring'e dön
+                _buildAppBarAction(
+                  icon: Icons.home_outlined,
+                  tooltip: 'Ana Sayfa',
+                  onPressed: () => setState(() => _selectedIndex = 0),
+                ),
+                // Scan - Ağ taraması
+                _buildScanAction(),
+                // Theme toggle
+                _buildThemeAction(),
+                // Exit - Uygulamayı kapat
+                _buildAppBarAction(
+                  icon: Icons.logout,
+                  tooltip: 'Çıkış',
+                  onPressed: () => exit(0),
                 ),
               ],
             ),
@@ -109,6 +123,78 @@ class _ShellPageState extends ConsumerState<ShellPage> {
           // Status Bar
           _buildStatusBar(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAppBarAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(icon, size: 22),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScanAction() {
+    final scanStatus = ref.watch(scanningProvider);
+    final isScanning = scanStatus.state == ScanningState.scanning;
+
+    return Tooltip(
+      message: isScanning ? 'Taranıyor...' : 'Ağ Tara',
+      child: InkWell(
+        onTap: isScanning
+            ? null
+            : () async {
+                await ref.read(scanningProvider.notifier).scan();
+                await ref.read(deviceListProvider.notifier).refresh();
+              },
+        borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: isScanning
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.accentPrimary,
+                  ),
+                )
+              : const Icon(Icons.radar_rounded, size: 22),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeAction() {
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
+    return Tooltip(
+      message: isDark ? 'Açık Tema' : 'Koyu Tema',
+      child: InkWell(
+        onTap: () {
+          ref.read(themeModeProvider.notifier).state =
+              isDark ? ThemeMode.light : ThemeMode.dark;
+        },
+        borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(
+            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            size: 22,
+          ),
+        ),
       ),
     );
   }

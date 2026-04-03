@@ -4,11 +4,8 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
-import '../../../../shared/widgets/neumorphic_toggle.dart';
 import '../../domain/entities/device.dart';
 import '../../domain/entities/device_status.dart';
-import '../../domain/usecases/toggle_relay.dart';
-import '../providers/device_list_provider.dart';
 import '../providers/device_status_provider.dart';
 
 class DeviceCard extends ConsumerWidget {
@@ -20,311 +17,194 @@ class DeviceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(deviceStatusProvider(device.id));
 
-    return statusAsync.when(
-      loading: () => _buildLoadingCard(context),
-      error: (err, stack) => _buildErrorCard(context, err.toString()),
-      data: (status) => _buildStatusCard(context, ref, status),
-    );
-  }
-
-  Widget _buildLoadingCard(BuildContext context) {
     return NeumorphicContainer(
       style: NeumorphicStyle.convex,
-      padding: const EdgeInsets.all(AppConstants.paddingLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDeviceHeader(context, isOnline: false),
-          const Spacer(),
-          const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.accentPrimary,
-            ),
-          ),
-          const Spacer(),
-        ],
+      padding: const EdgeInsets.all(16),
+      child: statusAsync.when(
+        data: (status) => _buildCard(context, status),
+        loading: () => _buildLoading(context),
+        error: (error, stack) => _buildError(context),
       ),
     );
   }
 
-  Widget _buildErrorCard(BuildContext context, String error) {
-    return NeumorphicContainer(
-      style: NeumorphicStyle.convex,
-      padding: const EdgeInsets.all(AppConstants.paddingLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDeviceHeader(context, isOnline: false),
-          const SizedBox(height: AppConstants.paddingMedium),
-          Text(
-            'Hata: $error',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.statusOffline,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusCard(
-    BuildContext context,
-    WidgetRef ref,
-    DeviceStatus? status,
-  ) {
+  Widget _buildCard(BuildContext context, DeviceStatus? status) {
     final isOnline = status?.isOnline ?? false;
 
-    return NeumorphicContainer(
-      style: NeumorphicStyle.convex,
-      padding: const EdgeInsets.all(AppConstants.paddingLarge),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: name, IP, type icon, status dot
-            _buildDeviceHeader(context, isOnline: isOnline),
-
-            if (status != null && isOnline) ...[
-              const SizedBox(height: AppConstants.paddingSmall),
-
-              // Info row: MAC + ping badge
-              _buildInfoRow(context, status),
-              const SizedBox(height: AppConstants.paddingMedium),
-
-              // Relay controls
-              if (status.relays.isNotEmpty) ...[
-                _buildRelaySection(context, ref, status),
-                const SizedBox(height: AppConstants.paddingMedium),
-              ],
-
-              // Sensor data
-              if (status.sensors != null) _buildSensorSection(context, status),
-            ],
-
-            if (!isOnline) ...[
-              const SizedBox(height: AppConstants.paddingMedium),
-              Text(
-                'Cihaz çevrimdışı',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.statusOffline,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeviceHeader(BuildContext context, {required bool isOnline}) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Online/offline dot
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: isOnline ? AppColors.statusOnline : AppColors.statusOffline,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: AppConstants.paddingSmall),
-
-        // Device name & IP
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        // Header: Status dot + Name
+        Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isOnline
+                    ? AppColors.statusOnline
+                    : AppColors.statusOffline,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
                 device.name,
                 style: AppTextStyles.headline3,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              Text(device.ip, style: AppTextStyles.caption),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        // IP address
+        Text(
+          device.ip,
+          style: AppTextStyles.caption,
+        ),
+
+        const SizedBox(height: 8),
+
+        // Ping + Critical sensor (tek satir)
+        if (isOnline && status != null) ...[
+          Row(
+            children: [
+              // Ping badge
+              NeumorphicContainer(
+                style: NeumorphicStyle.concave,
+                borderRadius:
+                    BorderRadius.circular(AppConstants.radiusSmall),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                child: Text(
+                  '${status.pingLatency}ms',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.accentPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Critical sensor (varsa)
+              ..._buildCriticalSensor(status),
             ],
           ),
-        ),
-
-        // Device type chip
-        Icon(
-          device.type == DeviceType.esp8266
-              ? Icons.memory_rounded
-              : Icons.developer_board_rounded,
-          color: AppColors.accentPrimary,
-          size: 24,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(BuildContext context, DeviceStatus status) {
-    return Row(
-      children: [
-        // MAC address
-        if (status.macAddress != null)
-          Expanded(
-            child: Text(
-              status.macAddress!,
-              style: AppTextStyles.caption,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-        // Ping latency badge
-        NeumorphicContainer(
-          style: NeumorphicStyle.concave,
-          borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.paddingSmall,
-            vertical: AppConstants.paddingXSmall,
-          ),
-          child: Text(
-            '${status.pingLatency}ms',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.accentPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRelaySection(
-    BuildContext context,
-    WidgetRef ref,
-    DeviceStatus status,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Röleler', style: AppTextStyles.body2),
-        const SizedBox(height: AppConstants.paddingSmall),
-        ...status.relays.entries.map((entry) {
-          final isOn = status.isRelayActive(entry.key);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppConstants.paddingXSmall),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isOn ? AppColors.relayOn : AppColors.relayOff,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: AppConstants.paddingSmall),
-                Expanded(
-                  child: Text(
-                    entry.key.replaceAll('_', ' ').toUpperCase(),
-                    style: AppTextStyles.caption,
-                  ),
-                ),
-                NeumorphicToggle(
-                  value: isOn,
-                  width: 48,
-                  height: 24,
-                  onChanged: (value) async {
-                    final toggleRelay = ToggleRelay(
-                      ref.read(deviceRepositoryProvider),
-                    );
-
-                    final result = await toggleRelay(
-                      ToggleRelayParams(
-                        deviceIp: device.ip,
-                        relayId: entry.key,
-                      ),
-                    );
-
-                    result.fold(
-                      (failure) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Röle kontrol hatası: ${failure.message}'),
-                              backgroundColor: AppColors.statusOffline,
-                            ),
-                          );
-                        }
-                      },
-                      (success) {
-                        ref.invalidate(deviceStatusProvider(device.id));
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildSensorSection(BuildContext context, DeviceStatus status) {
-    final sensors = status.sensors!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Sensörler', style: AppTextStyles.body2),
-        const SizedBox(height: AppConstants.paddingSmall),
-        if (sensors.motion != null)
-          _buildSensorRow(
-            Icons.directions_run_rounded,
-            'Hareket',
-            sensors.hasMotion ? 'Algılandı' : 'Yok',
-            sensors.hasMotion
-                ? AppColors.statusWarning
-                : AppColors.textSecondary,
-          ),
-        if (sensors.temperature != null)
-          _buildSensorRow(
-            Icons.thermostat_rounded,
-            'Sıcaklık',
-            '${sensors.temperature!.toStringAsFixed(1)}°C',
-            AppColors.accentPrimary,
-          ),
-        if (sensors.humidity != null)
-          _buildSensorRow(
-            Icons.water_drop_rounded,
-            'Nem',
-            '${sensors.humidity!.toStringAsFixed(0)}%',
-            AppColors.statusInfo,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSensorRow(
-    IconData icon,
-    String label,
-    String value,
-    Color valueColor,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppConstants.paddingXSmall),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: AppConstants.paddingSmall),
-          Text(label, style: AppTextStyles.caption),
-          const Spacer(),
+        ] else ...[
           Text(
-            value,
+            'Cihaz cevrimdisi',
             style: AppTextStyles.caption.copyWith(
-              color: valueColor,
-              fontWeight: FontWeight.w600,
+              color: AppColors.statusOffline,
             ),
           ),
         ],
-      ),
+      ],
+    );
+  }
+
+  List<Widget> _buildCriticalSensor(DeviceStatus status) {
+    final sensors = status.sensors;
+    if (sensors == null) return [];
+
+    // Oncelik: Temperature > Motion > Humidity
+    if (sensors.temperature != null) {
+      return [
+        const Icon(Icons.thermostat_rounded,
+            size: 14, color: AppColors.accentPrimary),
+        const SizedBox(width: 4),
+        Text(
+          '${sensors.temperature!.toStringAsFixed(1)}\u00B0C',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.accentPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
+        ),
+      ];
+    }
+
+    if (sensors.motion != null) {
+      final detected = sensors.hasMotion;
+      return [
+        Icon(
+          Icons.directions_run_rounded,
+          size: 14,
+          color: detected ? AppColors.statusWarning : AppColors.textSecondary,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          detected ? 'Algilandi' : 'Yok',
+          style: AppTextStyles.caption.copyWith(
+            color:
+                detected ? AppColors.statusWarning : AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
+        ),
+      ];
+    }
+
+    if (sensors.humidity != null) {
+      return [
+        const Icon(Icons.water_drop_rounded,
+            size: 14, color: AppColors.statusInfo),
+        const SizedBox(width: 4),
+        Text(
+          '${sensors.humidity!.toStringAsFixed(0)}%',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.statusInfo,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
+        ),
+      ];
+    }
+
+    return [];
+  }
+
+  Widget _buildLoading(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(device.name, style: AppTextStyles.headline3),
+        const SizedBox(height: 8),
+        const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.accentPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildError(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(device.name, style: AppTextStyles.headline3),
+        const SizedBox(height: 8),
+        Text(
+          'Hata',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.statusOffline,
+          ),
+        ),
+      ],
     );
   }
 }
