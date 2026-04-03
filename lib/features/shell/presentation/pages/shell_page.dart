@@ -3,6 +3,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
 import '../../../device_monitoring/presentation/pages/monitoring_page.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 
 class ShellPage extends StatefulWidget {
   const ShellPage({super.key});
@@ -18,7 +19,7 @@ class _ShellPageState extends State<ShellPage> {
     MonitoringPage(),
     Center(child: Text('Automation')),
     Center(child: Text('Analytics')),
-    Center(child: Text('Settings')),
+    SettingsPage(),
   ];
 
   static const _navItems = [
