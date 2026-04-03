@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
 import '../../../device_monitoring/presentation/pages/monitoring_page.dart';
+import '../../../device_monitoring/presentation/providers/device_list_provider.dart';
+import '../../../device_monitoring/presentation/providers/scanning_provider.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 
-class ShellPage extends StatefulWidget {
+class ShellPage extends ConsumerStatefulWidget {
   const ShellPage({super.key});
 
   @override
-  State<ShellPage> createState() => _ShellPageState();
+  ConsumerState<ShellPage> createState() => _ShellPageState();
 }
 
-class _ShellPageState extends State<ShellPage> {
+class _ShellPageState extends ConsumerState<ShellPage> {
   int _selectedIndex = 0;
 
   static const List<Widget> _pages = [
@@ -104,30 +107,60 @@ class _ShellPageState extends State<ShellPage> {
           ),
 
           // Status Bar
-          NeumorphicContainer(
-            style: NeumorphicStyle.flat,
-            borderRadius: BorderRadius.zero,
-            height: 32,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.paddingLarge,
+          _buildStatusBar(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBar(BuildContext context) {
+    final scanStatus = ref.watch(scanningProvider);
+    final deviceListAsync = ref.watch(deviceListProvider);
+    final totalDevices = deviceListAsync.valueOrNull?.length ?? 0;
+    final onlineCount =
+        scanStatus.results.values.where((s) => s.isOnline).length;
+    final isScanning = scanStatus.state == ScanningState.scanning;
+    final lastScan = scanStatus.lastScanTime;
+
+    String statusMessage;
+    Color statusColor;
+
+    if (isScanning) {
+      statusMessage = 'Taranıyor...';
+      statusColor = AppColors.accentPrimary;
+    } else if (lastScan != null) {
+      final timeStr =
+          '${lastScan.hour.toString().padLeft(2, '0')}:${lastScan.minute.toString().padLeft(2, '0')}';
+      statusMessage =
+          '$onlineCount/$totalDevices cihaz online • Son tarama: $timeStr';
+      statusColor =
+          onlineCount > 0 ? AppColors.statusOnline : AppColors.statusOffline;
+    } else {
+      statusMessage = 'Bağlantı bekleniyor...';
+      statusColor = AppColors.textSecondary;
+    }
+
+    return NeumorphicContainer(
+      style: NeumorphicStyle.flat,
+      borderRadius: BorderRadius.zero,
+      height: 32,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.paddingLarge,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.statusOnline,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: AppConstants.paddingSmall),
-                Text(
-                  'Bağlantı bekleniyor...',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+          ),
+          const SizedBox(width: AppConstants.paddingSmall),
+          Text(
+            statusMessage,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),
