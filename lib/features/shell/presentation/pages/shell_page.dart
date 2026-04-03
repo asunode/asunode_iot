@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
+import '../../../device_monitoring/presentation/pages/monitoring_page.dart';
 
 class ShellPage extends StatefulWidget {
   const ShellPage({super.key});
@@ -12,6 +13,13 @@ class ShellPage extends StatefulWidget {
 
 class _ShellPageState extends State<ShellPage> {
   int _selectedIndex = 0;
+
+  static const List<Widget> _pages = [
+    MonitoringPage(),
+    Center(child: Text('Automation')),
+    Center(child: Text('Analytics')),
+    Center(child: Text('Settings')),
+  ];
 
   static const _navItems = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Monitoring'),
@@ -88,9 +96,7 @@ class _ShellPageState extends State<ShellPage> {
 
                 // Content Area
                 Expanded(
-                  child: Container(
-                    color: bgColor,
-                  ),
+                  child: _pages[_selectedIndex],
                 ),
               ],
             ),
