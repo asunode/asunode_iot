@@ -53,7 +53,12 @@ class MonitoringPage extends ConsumerWidget {
       height: 56,
       borderRadius: BorderRadius.circular(28),
       isEnabled: !isScanning,
-      onPressed: () => ref.read(scanningProvider.notifier).scan(),
+      onPressed: isScanning
+          ? null
+          : () async {
+              await ref.read(scanningProvider.notifier).scan();
+              await ref.read(deviceListProvider.notifier).refresh();
+            },
       child: isScanning
           ? const SizedBox(
               width: 24,

@@ -7,6 +7,8 @@ import '../../../../shared/widgets/neumorphic_container.dart';
 import '../../../../shared/widgets/neumorphic_toggle.dart';
 import '../../domain/entities/device.dart';
 import '../../domain/entities/device_status.dart';
+import '../../domain/usecases/toggle_relay.dart';
+import '../providers/device_list_provider.dart';
 import '../providers/device_status_provider.dart';
 
 class DeviceCard extends ConsumerWidget {
@@ -227,8 +229,34 @@ class DeviceCard extends ConsumerWidget {
                   value: isOn,
                   width: 48,
                   height: 24,
-                  onChanged: (value) {
-                    // TODO: CP10 - toggleRelayProvider entegrasyonu
+                  onChanged: (value) async {
+                    final toggleRelay = ToggleRelay(
+                      ref.read(deviceRepositoryProvider),
+                    );
+
+                    final result = await toggleRelay(
+                      ToggleRelayParams(
+                        deviceIp: device.ip,
+                        relayId: entry.key,
+                      ),
+                    );
+
+                    result.fold(
+                      (failure) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Röle kontrol hatası: ${failure.message}'),
+                              backgroundColor: AppColors.statusOffline,
+                            ),
+                          );
+                        }
+                      },
+                      (success) {
+                        ref.invalidate(deviceStatusProvider(device.id));
+                      },
+                    );
                   },
                 ),
               ],
