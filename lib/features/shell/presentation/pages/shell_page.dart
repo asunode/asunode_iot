@@ -28,10 +28,10 @@ class _ShellPageState extends ConsumerState<ShellPage> {
   ];
 
   static const _navItems = [
-    _NavItem(icon: Icons.dashboard_rounded, label: 'Monitoring'),
-    _NavItem(icon: Icons.smart_toy_rounded, label: 'Automation'),
-    _NavItem(icon: Icons.analytics_rounded, label: 'Analytics'),
-    _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
+    _NavItem(icon: Icons.dashboard_customize_outlined, selectedIcon: Icons.dashboard_customize, label: 'İzleme'),
+    _NavItem(icon: Icons.bolt_outlined, selectedIcon: Icons.bolt, label: 'Otomasyon'),
+    _NavItem(icon: Icons.insights_outlined, selectedIcon: Icons.insights, label: 'Analiz'),
+    _NavItem(icon: Icons.tune_outlined, selectedIcon: Icons.tune, label: 'Ayarlar'),
   ];
 
   @override
@@ -267,7 +267,7 @@ class _ShellPageState extends ConsumerState<ShellPage> {
             borderRadius: BorderRadius.circular(AppConstants.radiusButton),
           ),
           child: Icon(
-            item.icon,
+            isSelected ? item.selectedIcon : item.icon,
             color: isSelected
                 ? AppColors.accentText
                 : Theme.of(context).iconTheme.color,
@@ -280,7 +280,8 @@ class _ShellPageState extends ConsumerState<ShellPage> {
 }
 
 class _NavItem {
-  const _NavItem({required this.icon, required this.label});
+  const _NavItem({required this.icon, required this.selectedIcon, required this.label});
   final IconData icon;
+  final IconData selectedIcon;
   final String label;
 }

@@ -4,6 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
+import '../../../../shared/widgets/status_led.dart';
 import '../../domain/entities/device.dart';
 import '../../domain/entities/device_status.dart';
 import '../providers/device_status_provider.dart';
@@ -38,17 +39,6 @@ class DeviceCard extends ConsumerWidget {
         // Header: Status dot + Name
         Row(
           children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isOnline
-                    ? AppColors.statusOnline
-                    : AppColors.statusOffline,
-              ),
-            ),
-            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 device.name,
@@ -56,6 +46,11 @@ class DeviceCard extends ConsumerWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+            const SizedBox(width: 8),
+            StatusLed(
+              status: isOnline ? LedStatus.online : LedStatus.offline,
+              size: 20,
             ),
           ],
         ),
