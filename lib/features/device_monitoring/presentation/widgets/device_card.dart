@@ -77,39 +77,41 @@ class DeviceCard extends ConsumerWidget {
     return NeumorphicContainer(
       style: NeumorphicStyle.convex,
       padding: const EdgeInsets.all(AppConstants.paddingLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: name, IP, type icon, status dot
-          _buildDeviceHeader(context, isOnline: isOnline),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: name, IP, type icon, status dot
+            _buildDeviceHeader(context, isOnline: isOnline),
 
-          if (status != null && isOnline) ...[
-            const SizedBox(height: AppConstants.paddingSmall),
+            if (status != null && isOnline) ...[
+              const SizedBox(height: AppConstants.paddingSmall),
 
-            // Info row: MAC + ping badge
-            _buildInfoRow(context, status),
-            const SizedBox(height: AppConstants.paddingMedium),
-
-            // Relay controls
-            if (status.relays.isNotEmpty) ...[
-              _buildRelaySection(context, ref, status),
+              // Info row: MAC + ping badge
+              _buildInfoRow(context, status),
               const SizedBox(height: AppConstants.paddingMedium),
+
+              // Relay controls
+              if (status.relays.isNotEmpty) ...[
+                _buildRelaySection(context, ref, status),
+                const SizedBox(height: AppConstants.paddingMedium),
+              ],
+
+              // Sensor data
+              if (status.sensors != null) _buildSensorSection(context, status),
             ],
 
-            // Sensor data
-            if (status.sensors != null) _buildSensorSection(context, status),
-          ],
-
-          if (!isOnline) ...[
-            const SizedBox(height: AppConstants.paddingMedium),
-            Text(
-              'Cihaz çevrimdışı',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.statusOffline,
+            if (!isOnline) ...[
+              const SizedBox(height: AppConstants.paddingMedium),
+              Text(
+                'Cihaz çevrimdışı',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.statusOffline,
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

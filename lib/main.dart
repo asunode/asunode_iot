@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,29 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
+
+  // TEST: İlk çalıştırmada örnek cihazları ekle
+  if (!prefs.containsKey('devices')) {
+    final testDevices = [
+      {
+        'id': '192.168.55.20',
+        'ip': '192.168.55.20',
+        'name': 'ESP32-C6 Salon',
+        'type': 'esp32c6',
+        'capabilities': ['relay_1', 'relay_2', 'temperature', 'humidity', 'motion'],
+        'isActive': true,
+      },
+      {
+        'id': '192.168.55.29',
+        'ip': '192.168.55.29',
+        'name': 'ESP8266 Mutfak',
+        'type': 'esp8266',
+        'capabilities': ['relay_1', 'relay_2'],
+        'isActive': true,
+      },
+    ];
+    await prefs.setString('devices', jsonEncode(testDevices));
+  }
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
