@@ -1,3 +1,4 @@
+import '../../../../core/enums/device_type.dart';
 import '../../domain/entities/device.dart';
 
 class DeviceDTO {
@@ -7,6 +8,7 @@ class DeviceDTO {
   final String type;
   final List<String> capabilities;
   final bool isActive;
+  final String? deviceCategory;
 
   DeviceDTO({
     required this.id,
@@ -15,6 +17,7 @@ class DeviceDTO {
     required this.type,
     required this.capabilities,
     required this.isActive,
+    this.deviceCategory,
   });
 
   factory DeviceDTO.fromJson(Map<String, dynamic> json) {
@@ -27,6 +30,7 @@ class DeviceDTO {
           .map((e) => e as String)
           .toList(),
       isActive: json['isActive'] as bool? ?? true,
+      deviceCategory: json['deviceCategory'] as String?,
     );
   }
 
@@ -38,6 +42,7 @@ class DeviceDTO {
       'type': type,
       'capabilities': capabilities,
       'isActive': isActive,
+      'deviceCategory': deviceCategory,
     };
   }
 
@@ -49,6 +54,7 @@ class DeviceDTO {
       type: type == 'esp8266' ? DeviceType.esp8266 : DeviceType.esp32c6,
       capabilities: capabilities,
       isActive: isActive,
+      deviceCategory: DeviceCategoryExtension.fromString(deviceCategory),
     );
   }
 
@@ -60,6 +66,7 @@ class DeviceDTO {
       type: device.type == DeviceType.esp8266 ? 'esp8266' : 'esp32c6',
       capabilities: device.capabilities,
       isActive: device.isActive,
+      deviceCategory: device.deviceCategory.toJsonString(),
     );
   }
 }

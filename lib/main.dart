@@ -23,6 +23,7 @@ void main() async {
         'type': 'esp32c6',
         'capabilities': ['relay_1', 'relay_2', 'temperature', 'humidity', 'motion'],
         'isActive': true,
+        'deviceCategory': 'sensor',
       },
       {
         'id': '192.168.55.29',
@@ -31,6 +32,7 @@ void main() async {
         'type': 'esp8266',
         'capabilities': ['relay_1', 'relay_2'],
         'isActive': true,
+        'deviceCategory': 'relay',
       },
       {
         'id': '192.168.55.21',
@@ -39,6 +41,7 @@ void main() async {
         'type': 'esp32',
         'capabilities': ['relay_1', 'motion', 'humidity'],
         'isActive': true,
+        'deviceCategory': 'sensor',
       },
     ];
     await prefs.setString('devices', jsonEncode(testDevices));

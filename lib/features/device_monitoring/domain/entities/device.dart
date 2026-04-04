@@ -1,3 +1,5 @@
+import '../../../../core/enums/device_type.dart';
+
 enum DeviceType {
   esp8266,
   esp32c6,
@@ -10,6 +12,7 @@ class Device {
   final DeviceType type;
   final List<String> capabilities;
   final bool isActive;
+  final DeviceCategory deviceCategory;
 
   Device({
     required this.id,
@@ -18,6 +21,7 @@ class Device {
     required this.type,
     required this.capabilities,
     this.isActive = true,
+    this.deviceCategory = DeviceCategory.other,
   });
 
   Device copyWith({
@@ -27,6 +31,7 @@ class Device {
     DeviceType? type,
     List<String>? capabilities,
     bool? isActive,
+    DeviceCategory? deviceCategory,
   }) {
     return Device(
       id: id ?? this.id,
@@ -35,11 +40,13 @@ class Device {
       type: type ?? this.type,
       capabilities: capabilities ?? this.capabilities,
       isActive: isActive ?? this.isActive,
+      deviceCategory: deviceCategory ?? this.deviceCategory,
     );
   }
 
   @override
-  String toString() => 'Device(id: $id, name: $name, ip: $ip, type: $type)';
+  String toString() =>
+      'Device(id: $id, name: $name, ip: $ip, type: $type, category: $deviceCategory)';
 
   @override
   bool operator ==(Object other) {

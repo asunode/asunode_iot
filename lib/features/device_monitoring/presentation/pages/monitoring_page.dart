@@ -5,9 +5,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/neumorphic_button.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
+import '../../../../shared/widgets/neumorphic_toggle.dart';
 import '../../domain/entities/device.dart';
 import '../providers/device_list_provider.dart';
 import '../providers/device_status_provider.dart';
+import '../providers/relay_control_provider.dart';
 import '../providers/scanning_provider.dart';
 import '../widgets/device_card.dart';
 
@@ -71,6 +73,7 @@ class _MonitoringPageState extends ConsumerState<MonitoringPage> {
 
   Widget _buildContent(List<Device> devices) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // SOL: Grid bolumu (3/4)
         Expanded(
@@ -120,7 +123,10 @@ class _MonitoringPageState extends ConsumerState<MonitoringPage> {
         // SAG: Detay paneli (1/4)
         Expanded(
           flex: 1,
-          child: _buildDetailPanel(devices),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: _buildDetailPanel(devices),
+          ),
         ),
       ],
     );
@@ -152,60 +158,49 @@ class _MonitoringPageState extends ConsumerState<MonitoringPage> {
       margin: const EdgeInsets.all(AppConstants.paddingMedium),
       child: NeumorphicContainer(
         style: NeumorphicStyle.convex,
-        padding: const EdgeInsets.all(AppConstants.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Baslik
-            Text(
-              selectedDevice.name,
-              style: AppTextStyles.headline2,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              selectedDevice.ip,
-              style: AppTextStyles.caption,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              selectedDevice.type.name.toUpperCase(),
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.accentPrimary,
-                fontWeight: FontWeight.w600,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.paddingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Baslik
+              Text(
+                selectedDevice.name,
+                style: AppTextStyles.headline2,
               ),
-            ),
-            const SizedBox(height: AppConstants.paddingLarge),
-
-            // Status bilgisi
-            statusAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(
+              const SizedBox(height: 8),
+              Text(
+                selectedDevice.ip,
+                style: AppTextStyles.caption,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                selectedDevice.type.name.toUpperCase(),
+                style: AppTextStyles.caption.copyWith(
                   color: AppColors.accentPrimary,
-                  strokeWidth: 2,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              error: (error, stack) => Text(
-                'Durum alinamadi',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.statusOffline,
-                ),
-              ),
-              data: (status) => _buildDetailStatus(status, selectedDevice),
-            ),
+              const SizedBox(height: AppConstants.paddingLarge),
 
-            const Spacer(),
-
-            // Placeholder
-            Center(
-              child: Text(
-                'Detay icerigi gelecek',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
+              // Status bilgisi
+              statusAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.accentPrimary,
+                    strokeWidth: 2,
+                  ),
                 ),
-                textAlign: TextAlign.center,
+                error: (error, stack) => Text(
+                  'Durum alinamadi',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.statusOffline,
+                  ),
+                ),
+                data: (status) => _buildDetailStatus(status, selectedDevice),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -265,42 +260,284 @@ class _MonitoringPageState extends ConsumerState<MonitoringPage> {
           if (status.macAddress != null)
             _buildDetailRow('MAC', status.macAddress!),
 
-          // Sensors
+          // Sensor Widgets
           if (status.sensors != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Text(
+              'SENSORLER',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Temperature - Buyuk vurgulu widget
             if (status.sensors!.temperature != null)
-              _buildDetailRow(
-                'Sicaklik',
-                '${status.sensors!.temperature!.toStringAsFixed(1)}\u00B0C',
-              ),
+              _buildTemperatureWidget(status.sensors!.temperature!),
+
+            if (status.sensors!.temperature != null)
+              const SizedBox(height: 10),
+
+            // Humidity - Orta boy widget
             if (status.sensors!.humidity != null)
-              _buildDetailRow(
-                'Nem',
-                '${status.sensors!.humidity!.toStringAsFixed(0)}%',
-              ),
+              _buildHumidityWidget(status.sensors!.humidity!),
+
+            if (status.sensors!.humidity != null)
+              const SizedBox(height: 10),
+
+            // Motion - Kucuk boy widget
             if (status.sensors!.motion != null)
-              _buildDetailRow(
-                'Hareket',
-                status.sensors!.hasMotion ? 'Algilandi' : 'Yok',
-              ),
+              _buildMotionWidget(status.sensors!.hasMotion),
           ],
 
-          // Relays
+          // Relay Controls (Toggle)
           if (status.relays.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Text(
+              'ROLE KONTROLLERI',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 10),
             ...status.relays.entries.map<Widget>((entry) {
               final isOn = status.isRelayActive(entry.key);
-              return _buildDetailRow(
-                entry.key.replaceAll('_', ' ').toUpperCase(),
-                isOn ? 'ACIK' : 'KAPALI',
-                valueColor: isOn
-                    ? AppColors.statusOnline
-                    : AppColors.statusOffline,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      entry.key.replaceAll('_', ' ').toUpperCase(),
+                      style: AppTextStyles.body2.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    NeumorphicToggle(
+                      value: isOn,
+                      onChanged: (newValue) {
+                        _handleRelayToggle(
+                          device,
+                          entry.key,
+                          newValue,
+                        );
+                      },
+                    ),
+                  ],
+                ),
               );
             }),
           ],
         ],
       ],
+    );
+  }
+
+  void _handleRelayToggle(Device device, String relayId, bool newState) {
+    debugPrint(
+      'Relay toggle: ${device.name} - $relayId - ${newState ? "ACIK" : "KAPALI"}',
+    );
+    ref
+        .read(relayControlProvider.notifier)
+        .setRelay(device.ip, relayId, newState)
+        .then((success) {
+      if (success) {
+        // Basarili - status'u yenile
+        ref.read(deviceStatusProvider(device.id).notifier).refresh();
+      } else {
+        // Hata - kullaniciya bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$relayId kontrol edilemedi'),
+              backgroundColor: AppColors.statusOffline,
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  // Temperature Widget - Buyuk vurgulu
+  Widget _buildTemperatureWidget(double temp) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.background;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? AppColors.shadowDarkMode.withValues(alpha: 0.5)
+                : AppColors.shadowDark.withValues(alpha: 0.3),
+            offset: const Offset(3, 3),
+            blurRadius: 6,
+          ),
+          BoxShadow(
+            color: isDark
+                ? AppColors.shadowLightMode.withValues(alpha: 0.3)
+                : AppColors.shadowLight.withValues(alpha: 0.8),
+            offset: const Offset(-3, -3),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.accentPrimary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.thermostat,
+              color: AppColors.accentPrimary,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Value
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sicaklik',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${temp.toStringAsFixed(1)}\u00B0C',
+                  style: AppTextStyles.headline3.copyWith(
+                    color: AppColors.accentPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Humidity Widget - Orta boy
+  Widget _buildHumidityWidget(double humidity) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.background;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? AppColors.shadowDarkMode.withValues(alpha: 0.4)
+                : AppColors.shadowDark.withValues(alpha: 0.2),
+            offset: const Offset(2, 2),
+            blurRadius: 5,
+          ),
+          BoxShadow(
+            color: isDark
+                ? AppColors.shadowLightMode.withValues(alpha: 0.2)
+                : AppColors.shadowLight.withValues(alpha: 0.7),
+            offset: const Offset(-2, -2),
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.water_drop,
+            color: Colors.blue.shade400,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Nem',
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '${humidity.toStringAsFixed(0)}%',
+            style: AppTextStyles.headline3.copyWith(
+              fontSize: 18,
+              color: Colors.blue.shade400,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Motion Widget - Kucuk boy
+  Widget _buildMotionWidget(bool detected) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.background;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? AppColors.shadowDarkMode.withValues(alpha: 0.4)
+                : AppColors.shadowDark.withValues(alpha: 0.2),
+            offset: const Offset(2, 2),
+            blurRadius: 5,
+          ),
+          BoxShadow(
+            color: isDark
+                ? AppColors.shadowLightMode.withValues(alpha: 0.2)
+                : AppColors.shadowLight.withValues(alpha: 0.7),
+            offset: const Offset(-2, -2),
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.motion_photos_on,
+            color: detected ? Colors.orange.shade400 : AppColors.textSecondary,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Hareket',
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            detected ? 'Algilandi' : 'Yok',
+            style: AppTextStyles.body2.copyWith(
+              color:
+                  detected ? Colors.orange.shade400 : AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
