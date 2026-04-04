@@ -56,9 +56,18 @@ class _StatusLedState extends State<StatusLed>
   void didUpdateWidget(StatusLed oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.status != widget.status) {
+      // Mevcut controller'ı dispose ETME, sadece yeniden yapılandır
       _controller.stop();
-      _controller.dispose();
-      _setupAnimation();
+
+      // Duration güncelle
+      _controller.duration = widget.status == LedStatus.online
+          ? const Duration(milliseconds: 2000)
+          : const Duration(milliseconds: 1000);
+
+      // Animasyon durumunu güncelle
+      if (widget.status != LedStatus.offline) {
+        _controller.repeat(reverse: true);
+      }
     }
   }
 

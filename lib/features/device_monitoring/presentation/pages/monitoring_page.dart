@@ -100,7 +100,9 @@ class _MonitoringPageState extends ConsumerState<MonitoringPage> {
                       _selectedDeviceId = device.id;
                     });
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
                     decoration: isSelected
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/neumorphic_container.dart';
 import '../../../device_monitoring/presentation/pages/monitoring_page.dart';
 import '../../../device_monitoring/presentation/providers/device_list_provider.dart';
+import '../../../device_monitoring/presentation/providers/device_status_provider.dart';
 import '../../../device_monitoring/presentation/providers/scanning_provider.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 
@@ -155,8 +156,29 @@ class _ShellPageState extends ConsumerState<ShellPage> {
         onTap: isScanning
             ? null
             : () async {
+                // 1. Scan yap (scanningProvider.results güncellenir)
                 await ref.read(scanningProvider.notifier).scan();
+
+                // 2. Device list refresh
                 await ref.read(deviceListProvider.notifier).refresh();
+
+                // 3. Her device için status PARALLEL FORCE REFRESH
+                final devices =
+                    ref.read(deviceListProvider).valueOrNull;
+                if (devices != null) {
+                  await Future.wait(
+                    devices.map(
+                      (device) => ref
+                          .read(
+                            deviceStatusProvider(device.id).notifier,
+                          )
+                          .refresh(),
+                    ),
+                  );
+                }
+
+                // 4. Device list son invalidate (güncel isOnline ile rebuild)
+                ref.invalidate(deviceListProvider);
               },
         borderRadius: BorderRadius.circular(AppConstants.radiusButton),
         child: Padding(
